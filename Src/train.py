@@ -46,9 +46,10 @@ def main():
         per_device_eval_batch_size=BATCH_SIZE,
         num_train_epochs=EPOCHS,
         weight_decay=WEIGHT_DECAY,
-        evaluation_strategy="epoch",
+        eval_strategy="epoch",
         save_strategy="epoch",
         load_best_model_at_end=True,
+        # remove_unused_columns حذف شد تا از ارورهای تنسور جلوگیری شود
     )
     
     trainer = Trainer(
@@ -56,7 +57,7 @@ def main():
         args=training_args,
         train_dataset=tokenized_datasets["train"],
         eval_dataset=tokenized_datasets["validation"],
-        tokenizer=tokenizer,
+        processing_class=tokenizer,
         data_collator=DataCollatorForTokenClassification(tokenizer=tokenizer),
         compute_metrics=compute_metrics,
     )

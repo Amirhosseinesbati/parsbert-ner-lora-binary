@@ -1,13 +1,57 @@
 import os
 import glob
+import subprocess
 from datasets import Dataset, DatasetDict
 from transformers import AutoTokenizer
 from config import MODEL_NAME, MAX_LEN
 
+def download_and_extract_data(target_folder):
+    """
+    بررسی می‌کند که آیا دیتا موجود است یا خیر. اگر نبود، آن را دانلود و استخراج می‌کند.
+    """
+    # بررسی وجود فایل‌های متنی در پوشه هدف
+    if os.path.exists(target_folder) and len(glob.glob(os.path.join(target_folder, '*.txt'))) > 0:
+        print(f"✅ داده‌ها از قبل در پوشه '{target_folder}' موجود هستند. (بدون نیاز به دانلود مجدد)")
+        return
+
+    print("📥 در حال دانلود دیتاست از Dropbox (لطفاً صبور باشید)...")
+    os.makedirs(target_folder, exist_ok=True)
+    
+    # لینک مستقیم دانلود (dl=1)
+    url = "https://www.dropbox.com/scl/fi/ln64xjqlwd4665u9sp2bq/Full_Dataset.rar?rlkey=g5aa4zefy2xpj98n3x8ihjcp2&st=bg907w5p&dl=1"
+    rar_path = "Full_Dataset.rar"
+    
+    try:
+        # دانلود فایل
+        subprocess.run(f"wget -O {rar_path} '{url}'", shell=True, check=True)
+        
+        print("📦 در حال استخراج فایل‌های دیتاست...")
+        # استخراج فایل‌ها مستقیماً داخل پوشه هدف (بدون ساخت پوشه‌های تو در تو)
+        subprocess.run(f"unrar e {rar_path} {target_folder}/", shell=True, check=True)
+        
+        # پاک کردن فایل فشرده برای خلوت شدن فضای سرور
+        if os.path.exists(rar_path):
+            os.remove(rar_path)
+            
+        print("🎉 دانلود و استخراج دیتاست با موفقیت انجام شد!")
+        
+    except subprocess.CalledProcessError as e:
+        print(f"❌ خطایی در فرآیند دانلود یا استخراج رخ داد: {e}")
+        print("❗ راهنمایی: احتمالاً پکیج unrar روی سرور نصب نیست.")
+        print("لطفاً این دستور را در ترمینال اجرا کنید: apt-get update && apt-get install unrar -y")
+        exit(1)
+
 def load_clean_dataset(folder_path):
+    # --- ابتدا مطمئن می‌شویم دیتا دانلود شده است ---
+    download_and_extract_data(folder_path)
+    # -----------------------------------------------
+
     all_tokens, all_ner_tags = [], []
     file_list = glob.glob(os.path.join(folder_path, '*.txt'))
     
+    if len(file_list) == 0:
+        raise ValueError(f"هیچ فایل .txt در مسیر {folder_path} پیدا نشد!")
+        
     for file_path in file_list:
         if "glove" in file_path.lower(): continue
         tokens, tags = [], []
@@ -24,6 +68,7 @@ def load_clean_dataset(folder_path):
             all_ner_tags.append(tags)
             
     dataset = Dataset.from_dict({'tokens': all_tokens, 'ner_tags': all_ner_tags})
+    print(f"📊 دیتاست با {len(dataset)} جمله با موفقیت ساخته شد.")
     
     # تقسیم‌بندی
     train_testvalid = dataset.train_test_split(test_size=0.3, seed=42)
