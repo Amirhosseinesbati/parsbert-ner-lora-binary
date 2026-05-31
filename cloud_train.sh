@@ -16,7 +16,7 @@ dvc pull
 
 # 4. اجرای پایپ‌لاین آموزش
 echo "🧠 Running ZenML Training Pipeline..."
-python src/pipeline.py
+python Src/pipeline.py
 
 echo "✅ Training Completed Successfully!"
 
