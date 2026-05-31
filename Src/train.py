@@ -2,10 +2,19 @@ import numpy as np
 from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score
 from transformers import AutoModelForTokenClassification, DataCollatorForTokenClassification, TrainingArguments, Trainer
 from peft import get_peft_model, LoraConfig, TaskType
+import mlflow
+import mlflow.pytorch
+import os
+import dagshub
 
 # وارد کردن متغیرها و توابع از فایل‌های خودمان
 from config import *
 from data_loader import load_clean_dataset, get_tokenized_dataset
+
+# اتصال به سرور MLflow داگزهاب
+
+dagshub.init(repo_owner='amiresbati52', repo_name='NER-LoRA-MLOps', mlflow=True)
+mlflow.set_experiment("ParsBERT_NER_Experiment")
 
 def compute_metrics(eval_preds):
     logits, labels = eval_preds
@@ -49,7 +58,10 @@ def main():
         eval_strategy="epoch",
         save_strategy="epoch",
         load_best_model_at_end=True,
-        # remove_unused_columns حذف شد تا از ارورهای تنسور جلوگیری شود
+        fp16=True,
+        report_to="mlflow",
+        run_name="Vast_Test"
+
     )
     
     trainer = Trainer(
@@ -63,7 +75,24 @@ def main():
     )
     
     print("🚀 Starting Training...")
+
+
+    # ثبت پارامترها به صورت اتوماتیک
+    mlflow.log_param("epochs", EPOCHS)
+    mlflow.log_param("learning_rate", LEARNING_RATE)
+    mlflow.log_param("lora_r", LORA_R)
+
+
+
     trainer.train()
+
+
+    # ثبت متریک‌ها
+    metrics = trainer.evaluate()
+    mlflow.log_metrics(metrics)
+
+    # ذخیره مدل در MLflow (بدون نیاز به ذخیره دستی در پوشه!)
+    mlflow.pytorch.log_model(peft_model, "best_model")
     
     print("💾 Saving the best model...")
     trainer.save_model(f"{OUTPUT_DIR}/best_model")
