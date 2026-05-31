@@ -8,7 +8,7 @@ pip install dvc dvc-s3 zenml vastai
 # 2. تنظیم دسترسی DVC به DagsHub (بدون نیاز به پسورد دستی)
 dvc remote modify origin --local auth basic
 dvc remote modify origin --local user amiresbati52
-dvc remote modify origin --local password b7bbea51b36793e3cb81403c0e5e277969cd23ba
+dvc remote modify origin --local password 9755f1691ad9f4e384f6131973699590f6dc63b0
 
 # 3. دانلود داده‌ها از کلود
 echo "📦 Pulling data from DVC..."
