@@ -92,7 +92,7 @@ def train_model_step(tokenized_datasets: DatasetDict):
         args=training_args,
         train_dataset=tokenized_datasets["train"],
         eval_dataset=tokenized_datasets["validation"],
-        processing_class=tokenizer,
+        tokenizer=tokenizer,
         data_collator=DataCollatorForTokenClassification(tokenizer=tokenizer),
         compute_metrics=compute_metrics,
     )

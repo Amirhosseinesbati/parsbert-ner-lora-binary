@@ -1,18 +1,15 @@
-# استفاده از یک نسخه سبک پایتون
 FROM python:3.10-slim
 
-# تنظیم پوشه کاری داخل کانتینر
 WORKDIR /app
 
-# کپی کردن فایل نیازمندی‌ها و نصب آن‌ها
+RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
+
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY src/app.py .
 
-# کپی کردن سورس کدهای پروژه
-COPY src/ /app/src/
+# راز موفقیت: نصب تمام کتابخانه‌ها در یک خط + معرفی منبع CPU برای پایتورچ 
+RUN pip install --no-cache-dir torch>=2.6.0 fastapi uvicorn transformers peft pydantic mlflow dagshub --extra-index-url https://download.pytorch.org/whl/cpu
 
-# باز کردن پورت 8000 برای ارتباط شبکه
 EXPOSE 8000
 
-# دستوری که هنگام اجرای کانتینر ران می‌شود
-CMD ["uvicorn", "src.app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]

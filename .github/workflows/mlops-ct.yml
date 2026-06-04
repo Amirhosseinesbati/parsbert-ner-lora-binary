@@ -1,0 +1,48 @@
+name: Continuous Training Pipeline
+
+on:
+  push:
+    branches: [ "main" ] 
+    paths:
+      - 'src/**'         
+      - 'cloud_train.sh'
+      - '.github/workflows/**'
+
+jobs:
+  launch-vast-gpu:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Vast CLI
+        run: pip install --upgrade vastai jq
+
+      - name: Launch Cloud GPU and Train
+        env:
+          VAST_API_KEY: ${{ secrets.VAST_API_KEY }}
+          DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+        run: |
+          echo "🔍 Searching for the cheapest RTX 3090..."
+          
+          # استخراج آیدی با jq
+          OFFER_ID=$(vastai search offers 'gpu_name=RTX_3090 num_gpus=1 rentable=True' -o dph --raw | jq -r '.[0].id')
+          
+          if [ -z "$OFFER_ID" ] || [ "$OFFER_ID" == "null" ]; then
+            echo "❌ No suitable RTX 3090 found. Exiting."
+            exit 1
+          fi
+          
+          echo "✅ Selected Offer ID: $OFFER_ID"
+          
+          echo "🚀 Renting instance and starting job..."
+          # دقت کنید: اینجا از --onstart-cmd استفاده شده است
+          vastai create instance $OFFER_ID \
+            --image pytorch/pytorch:2.4.0-cuda12.1-cudnn9-devel \
+            --disk 10 \
+            --env "-e DAGSHUB_TOKEN=$DAGSHUB_TOKEN -e VAST_API_KEY=$VAST_API_KEY" \
+            --onstart-cmd "apt-get update && apt-get install -y git && git clone https://github.com/Amirhosseinesbati/parsbert-ner-lora-binary.git /workspace/project && cd /workspace/project && bash cloud_train.sh"
+          
+          echo "🎉 Instance Launched! The server will train and then self-destruct."
