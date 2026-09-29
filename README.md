@@ -1,5 +1,7 @@
 # ParsBERT NER · LoRA · MLOps
 
+> **Evidence status:** This repository documents a fine-tuning and serving pipeline. It does not currently publish a committed held-out entity-level F1 report with the dataset split, label schema, seed, and model artifact hash. Avoid treating token accuracy or pipeline smoke tests as verified NER quality.
+
 <p align="center">
   <strong>End-to-end Persian Named Entity Recognition</strong><br/>
   LoRA fine-tuning · MLflow tracking · DagsHub Model Registry · ZenML orchestration · DVC · FastAPI serving
